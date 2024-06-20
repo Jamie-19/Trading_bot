@@ -61,39 +61,39 @@ class MyStrategy(Strategy):
 
 
     def on_trading_iteration(self):
-        cash, last_price, quantity = self.position_sizing()
+        cash, last_price, quantity = self.position_sizing() 
         probability, sentiment = self.get_sentiment()
-        if cash>last_price:
-            if sentiment == "positive" and probability > 0.999:
-                if self.last_trade == "sell":
-                    self.sell_all()
+
+        if cash > last_price: 
+            if sentiment == "positive" and probability > .999: 
+                if self.last_trade == "sell": 
+                    self.sell_all() 
                 order = self.create_order(
-                    self.symbol,
-                    quantity,
-                    "buy",
-                    type="bracket",
-                    take_profit_price=last_price * 1.20,
-                    stop_loss_price=last_price * 0.95,
+                    self.symbol, 
+                    quantity, 
+                    "buy", 
+                    type="bracket", 
+                    take_profit_price=last_price*1.20, 
+                    stop_loss_price=last_price*.95
                 )
-                self.submit_order(order)
+                self.submit_order(order) 
                 self.last_trade = "buy"
-            
-            elif sentiment == "negative" and probability > 0.999:
-                if self.last_trade == "buy":
-                    self.sell_all()
+            elif sentiment == "negative" and probability > .999: 
+                if self.last_trade == "buy": 
+                    self.sell_all() 
                 order = self.create_order(
-                    self.symbol,
-                    quantity,
-                    "sell",
-                    type="bracket",
-                    take_profit_price=last_price * 0.80,
-                    stop_loss_price=last_price * 1.05,
+                    self.symbol, 
+                    quantity, 
+                    "sell", 
+                    type="bracket", 
+                    take_profit_price=last_price*.8, 
+                    stop_loss_price=last_price*1.05
                 )
-                self.submit_order(order)
+                self.submit_order(order) 
                 self.last_trade = "sell"
 
 # Backtest dates
-start_date = datetime(2023, 12, 1)
+start_date = datetime(2020, 1, 1)
 end_date = datetime(2023, 12, 31)
 
 # Broker setup
