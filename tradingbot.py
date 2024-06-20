@@ -6,6 +6,7 @@ from datetime import datetime
 from dotenv import load_dotenv
 from alpaca_trade_api import REST
 from timedelta import Timedelta
+from finbert_utils import estimate_sentiment
 
 load_dotenv()
 
@@ -51,19 +52,20 @@ class MyStrategy(Strategy):
         prior = today - Timedelta(days=3)
         return today.strftime('%Y-%m-%d'), prior.strftime('%Y-%m-%d')
 
-    def get_news(self):
+    def get_sentiment(self):
         today ,prior = self.get_dates()
         news = self.api.get_news(symbol=self.symbol,start=prior,end=today)
         news = [n.__dict__ ["_raw"]["headline"]for n in news]
-        return news
+        probability, sentiment = estimate_sentiment(news)
+        return probability, sentiment
 
 
     def on_trading_iteration(self):
         cash, last_price, quantity = self.position_sizing()
         if cash>last_price:
             if self.last_trade == None:
-                news = self.get_news() 
-                print(news)
+                probability, sentiment = self.get_sentiment() 
+                print(probability, sentiment)
                 order = self.create_order(
                     self.symbol,
                     quantity,
