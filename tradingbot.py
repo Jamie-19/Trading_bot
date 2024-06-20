@@ -40,6 +40,7 @@ class MyStrategy(Strategy):
         self.last_trade = None
         self.cash_at_risk = cash_at_risk
         self.api=REST(key_id=API_KEY,secret_key=API_SECRET, base_url=BASE_URL)
+        self.sentiment_cache = {}
 
     def position_sizing(self):
         cash = self.get_cash()
@@ -53,10 +54,13 @@ class MyStrategy(Strategy):
         return today.strftime('%Y-%m-%d'), prior.strftime('%Y-%m-%d')
 
     def get_sentiment(self):
-        today ,prior = self.get_dates()
-        news = self.api.get_news(symbol=self.symbol,start=prior,end=today)
-        news = [n.__dict__ ["_raw"]["headline"]for n in news]
-        probability, sentiment = estimate_sentiment(news)
+        today, prior = self.get_dates()
+        if prior in self.sentiment_cache:
+            return self.sentiment_cache[prior]
+        news = self.api.get_news(symbol=self.symbol, start=prior, end=today)
+        headlines = [n.headline for n in news]
+        probability, sentiment = estimate_sentiment(headlines)
+        self.sentiment_cache[prior] = (probability, sentiment)
         return probability, sentiment
 
 
