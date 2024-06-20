@@ -30,43 +30,42 @@ ALPACA_CREDS = {
     "PAPER": True,
 }
 
-symbol = "SPY"
+symbol = "AAPL"
 cash_at_risk = 0.5
 # Define the strategy
 class MyStrategy(Strategy):
-    def initialize(self,symbol,cash_at_risk):
+    def initialize(self, symbol, cash_at_risk): 
         self.symbol = symbol
-        self.sleep_time = "24H"
-        self.last_trade = None
+        self.sleeptime = "24H" 
+        self.last_trade = None 
+        # print("First trade: ", self.last_trade)
         self.cash_at_risk = cash_at_risk
-        self.api=REST(key_id=API_KEY,secret_key=API_SECRET, base_url=BASE_URL)
-        self.sentiment_cache = {}
+        self.api = REST(base_url=BASE_URL, key_id=API_KEY, secret_key=API_SECRET)
 
-    def position_sizing(self):
-        cash = self.get_cash()
+    def position_sizing(self): 
+        cash = self.get_cash() 
         last_price = self.get_last_price(self.symbol)
         quantity = round(cash * self.cash_at_risk / last_price,0)
         return cash, last_price, quantity
-    
-    def get_dates(self):
+
+    def get_dates(self): 
         today = self.get_datetime()
         prior = today - Timedelta(days=3)
         return today.strftime('%Y-%m-%d'), prior.strftime('%Y-%m-%d')
 
-    def get_sentiment(self):
+    def get_sentiment(self): 
         today, prior = self.get_dates()
-        if prior in self.sentiment_cache:
-            return self.sentiment_cache[prior]
-        news = self.api.get_news(symbol=self.symbol, start=prior, end=today)
-        headlines = [n.headline for n in news]
-        probability, sentiment = estimate_sentiment(headlines)
-        self.sentiment_cache[prior] = (probability, sentiment)
-        return probability, sentiment
-
+        news = self.api.get_news(symbol=self.symbol, 
+                                 start=prior, 
+                                 end=today) 
+        news = [n.__dict__["_raw"]["headline"] for n in news]
+        probability, sentiment = estimate_sentiment(news)
+        return probability, sentiment 
 
     def on_trading_iteration(self):
         cash, last_price, quantity = self.position_sizing() 
         probability, sentiment = self.get_sentiment()
+        # print(f"Probability: {probability}, Sentiment: {sentiment}")
 
         if cash > last_price: 
             if sentiment == "positive" and probability > .999: 
@@ -96,27 +95,20 @@ class MyStrategy(Strategy):
                 self.submit_order(order) 
                 self.last_trade = "sell"
 
-# Backtest dates
-start_date = datetime(2020, 1, 1)
-end_date = datetime(2023, 12, 31)
 
-# Broker setup
-broker = Alpaca(ALPACA_CREDS)
+start_date = datetime(2023,1,1)
+end_date = datetime(2023,12,31)
 
-# Strategy setup
-strategy = MyStrategy(
-    name="MLStrat",
-    broker=broker,
-    parameters={"symbol": symbol,
-                "cash_at_risk": cash_at_risk
-                }
-)
 
-# Run the backtest
+broker = Alpaca(ALPACA_CREDS) 
+
+strategy = MyStrategy(name='mlstrat', broker=broker, 
+                    parameters={"symbol":symbol, 
+                                "cash_at_risk":cash_at_risk})
+
 strategy.backtest(
-    YahooDataBacktesting,
-    start_date,
-    end_date,
-    parameters={"symbol": symbol,
-                "cash_at_risk": cash_at_risk},
+    YahooDataBacktesting, 
+    start_date, 
+    end_date, 
+    parameters={"symbol":symbol, "cash_at_risk":cash_at_risk}
 )
